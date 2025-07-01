@@ -5,19 +5,68 @@ import 'package:simfit/providers/user_provider.dart';
 import 'package:simfit/screens/login.dart';
 import 'package:simfit/screens/info.dart';
 
+/// The OnBoarding screen displays a three-page introductory slider
+/// to familiarize the user with the app features. Once completed,
+/// it marks onboarding as completed and navigates to the Login screen.
 class OnBoarding extends StatelessWidget {
-  const OnBoarding({Key? key}) : super(key: key); // ({super.key});
+  const OnBoarding({super.key});
+
+  /// Helper method to build content for each onboarding page
+  Widget _buildPageBody({
+    required BuildContext context,
+    required String title,
+    required String description,
+    required double spacing,
+  }) {
+    return Container(
+      alignment: Alignment.center,
+      width: MediaQuery.of(context).size.width * 0.9,
+      padding: const EdgeInsets.symmetric(horizontal: 40),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: <Widget>[
+          SizedBox(height: spacing),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: Theme.of(context).primaryColor,
+              fontSize: 30.0,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 20),
+          Text(
+            description,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.black,
+              fontSize: 24.0,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return SafeArea(
       child: OnBoardingSlider(
+        // Text displayed on the final button
         finishButtonText: 'LOG IN',
+
+        // Action when the onboarding is finished
         onFinish: () async {
           await Provider.of<UserProvider>(context, listen: false).onboardUser();
           Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: ((context) => const Login())));
+            MaterialPageRoute(builder: (_) => const Login()),
+          );
         },
+
+        // Styling for the final button
         finishButtonStyle: FinishButtonStyle(
           backgroundColor: Theme.of(context).primaryColor,
           foregroundColor: Theme.of(context).secondaryHeaderColor,
@@ -25,6 +74,8 @@ class OnBoarding extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
           ),
         ),
+
+        // "Skip" text button shown on top right
         skipTextButton: Text(
           'Skip',
           style: TextStyle(
@@ -33,6 +84,8 @@ class OnBoarding extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
+
+        // "Learn more" trailing text on bottom
         trailing: Text(
           'Learn more',
           style: TextStyle(
@@ -41,144 +94,60 @@ class OnBoarding extends StatelessWidget {
             fontWeight: FontWeight.w600,
           ),
         ),
+
+        // Function to navigate to the info page
         trailingFunction: () {
-          Navigator.of(context)
-              .push(MaterialPageRoute(builder: ((context) => const Info())));
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const Info()),
+          );
         },
+
+        // Slider appearance and behavior
         controllerColor: Theme.of(context).primaryColor,
         totalPage: 3,
+        speed: 1.8,
+        centerBackground: true,
         headerBackgroundColor: Colors.white,
         pageBackgroundColor: Colors.white,
-        centerBackground: true,
+
+        // Images shown for each slide
         background: [
           Padding(
-            padding: EdgeInsets.all(10),
-            child: Image.asset(
-              'assets/allenamento1.png',
-              height: 400,
-            ),
+            padding: const EdgeInsets.all(10),
+            child: Image.asset('assets/allenamento1.png', height: 400),
           ),
           Padding(
-            padding: EdgeInsets.all(10),
-            child: Image.asset(
-              'assets/grafico2.jpg',
-              height: 400,
-            ),
+            padding: const EdgeInsets.all(10),
+            child: Image.asset('assets/grafico2.jpg', height: 400),
           ),
           Padding(
-            padding: EdgeInsets.all(10),
-            child: Image.asset(
-              'assets/ciclista.jpg',
-              height: 400,
-            ),
+            padding: const EdgeInsets.all(10),
+            child: Image.asset('assets/ciclista.jpg', height: 400),
           ),
         ],
-        speed: 1.8,
+
+        // Page bodies corresponding to each background
         pageBodies: [
-          Container(
-            alignment: Alignment.center,
-            width: MediaQuery.of(context).size.width * 0.9,
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                const SizedBox(
-                  height: 420,
-                ),
-                Text(
-                  'Track',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Theme.of(context).primaryColor,
-                    fontSize: 30.0,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(
-                  height: 20,
-                ),
-                const Text(
-                  'Keep track of your training data collected by your Fitbit watch',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 24.0,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
+          _buildPageBody(
+            context: context,
+            title: 'Track',
+            description:
+                'Keep track of your training data collected by your Fitbit watch',
+            spacing: 420,
           ),
-          Container(
-            alignment: Alignment.center,
-            width: MediaQuery.of(context).size.width * 0.9,
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                const SizedBox(
-                  height: 420,
-                ),
-                Text(
-                  'Simulate',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Theme.of(context).primaryColor,
-                    fontSize: 30.0,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(
-                  height: 20,
-                ),
-                const Text(
-                  'Visualize your training load and simulate training sessions that suit your goals',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 22.0,
-                    fontWeight: FontWeight.w600,
-                  )
-                ),
-              ],
-            ),
+          _buildPageBody(
+            context: context,
+            title: 'Simulate',
+            description:
+                'Visualize your training load and simulate training sessions that suit your goals',
+            spacing: 420,
           ),
-          Container(
-            alignment: Alignment.center,
-            width: MediaQuery.of(context).size.width * 0.9,
-            padding: const EdgeInsets.symmetric(horizontal: 40),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                const SizedBox(
-                  height: 420,
-                ),
-                Text(
-                  'Train',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Theme.of(context).primaryColor,
-                    fontSize: 30.0,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(
-                  height: 20,
-                ),
-                const Text(
-                  'Tune the progress of your performance and start!',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 24.0,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
+          _buildPageBody(
+            context: context,
+            title: 'Train',
+            description:
+                'Tune the progress of your performance and start!',
+            spacing: 420,
           ),
         ],
       ),

@@ -19,7 +19,7 @@ class Info extends StatelessWidget {
       body: SafeArea(
         child: SingleChildScrollView(
           child: Container(
-            padding: EdgeInsets.all(20),
+            padding: const EdgeInsets.all(20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -38,7 +38,7 @@ class Info extends StatelessWidget {
                     color: Theme.of(context).primaryColor,
                   ),
                 ),
-                Text(
+                const Text(
                   'SimFit is an app to help you in tracking and planning your trainings. It provides you a summary on your daily health data tracked by your Fitbit watch and an overview of your performances during your training mesocycle.',
                   style: TextStyle(
                     fontWeight: FontWeight.normal,
@@ -55,7 +55,7 @@ class Info extends StatelessWidget {
                     color: Theme.of(context).primaryColor,
                   ),
                 ),
-                Text(
+                const Text(
                   'SimFit is dedicated to users who want to plan a training mesocycle. It keeps track of how the performance and training load varies during the mesocycle period and it allows to perform simulations about your next activity sessions to better calibrate training load and performance parameters.',
                   style: TextStyle(
                     fontWeight: FontWeight.normal,
@@ -72,7 +72,7 @@ class Info extends StatelessWidget {
                     color: Theme.of(context).primaryColor,
                   ),
                 ),
-                Text(
+                const Text(
                   'It is a training program period characterized by training goals for the improvement of performance-related parameters.',
                   style: TextStyle(
                     fontWeight: FontWeight.normal,
@@ -80,7 +80,7 @@ class Info extends StatelessWidget {
                     color: Colors.black,
                   ),
                 ),
-                SizedBox(height: 30),
+                const SizedBox(height: 30),
               ],
             ),
           ),

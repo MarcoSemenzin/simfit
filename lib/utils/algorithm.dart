@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:simfit/models/activity.dart';
 
-// Class `Algorithm` for computing training metrics based on activity data
+/// Class `Algorithm` for computing training metrics based on activity data
 class Algorithm {
   late double genderConst; // Constant based on gender
   late double maxHR; // Maximum heart rate based on age
@@ -10,7 +10,7 @@ class Algorithm {
   late int mesocycleLength; // Length of mesocycle in days
   late int daysFromStart; // Number of days from mesocycle start
 
-  // Constructor to initialize Algorithm class with necessary parameters
+  /// Constructor to initialize Algorithm class with necessary parameters
   Algorithm({
     required String gender,
     required int age,
@@ -25,7 +25,7 @@ class Algorithm {
     daysFromStart = daysFromMesoStart; // Setting days from mesocycle start
   }
 
-  // Method to compute TRIMP (Training Impulse) from a list of activities
+  /// Method to compute TRIMP (Training Impulse) from a list of activities
   double computeTRIMP(List<Activity> activities) {
     if (activities.isEmpty) return 0.0; // Returning 0.0 if activities list is empty
     
@@ -41,7 +41,7 @@ class Algorithm {
     return trimpTot; // Returning total TRIMP
   }
 
-  // Method to compute training scores (TRIMP, ACL, CTL, TSB) for each day in a mesocycle
+  /// Method to compute training scores (TRIMP, ACL, CTL, TSB) for each day in a mesocycle
   Map<DateTime, Map<String, double>> computeScoresOfMesocycle(DateTime day, Map<DateTime, List<Activity>> activityList) {
     Map<DateTime, Map<String, double>> scores = {}; // Initializing scores map
     
@@ -90,7 +90,7 @@ class Algorithm {
     return scores; // Returning computed scores map
   }
 
-  // Method to compute training scores for a new day and update scores map
+  /// Method to compute training scores for a new day and update scores map
   Map<String, double> computeScoresOfNewDay(DateTime newDay, List<Activity> newActivities, Map<DateTime, Map<String, double>> scores) {
     scores[newDay] = {}; // Initializing scores map for new day
 

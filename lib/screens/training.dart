@@ -10,34 +10,54 @@ import 'package:simfit/server/impact.dart';
 import 'package:simfit/utils/algorithm.dart';
 import 'package:simfit/utils/graphic_elements.dart';
 
+/// The main widget representing the Training Load page of the application.
+/// It fetches the user's training activities and resting heart rate (restHR),
+/// and displays different UIs depending on the mesocycle state.
 class Training extends StatefulWidget {
+  /// Route name used for navigation.
   static const routename = 'Training';
 
+  /// Constructor for Training widget.
   const Training({super.key});
 
   @override
-  _TrainingState createState() => _TrainingState();
+  TrainingState createState() => TrainingState();
 }
 
-class _TrainingState extends State<Training> {
+/// The state class for [Training] which manages data fetching and UI rendering.
+class TrainingState extends State<Training> {
+  /// Instance of the Impact class responsible for fetching activity and restHR data.
   final Impact impact = Impact();
 
-  DateTime lastDate =
-      DateUtils.dateOnly(DateTime.now().subtract(const Duration(days: 1)));
+  /// The last date to be considered for data fetching, defaulting to yesterday.
+  DateTime lastDate = DateUtils.dateOnly(DateTime.now().subtract(const Duration(days: 1)));
+
+  /// Future used to fetch data once during widget initialization.
   late Future<Map<String, dynamic>> _fetchDataFuture;
+
+  /// Reference to the user provider that holds user-specific data like mesocycle.
   late UserProvider _userProvider;
+
+  /// Indicates if today is the start of the mesocycle.
   bool isMesocycleStartToday = false;
+
+  /// Indicates if the mesocycle is set to start in the future.
   bool isMesocycleStartFuture = false;
 
+  /// Called when the widget is first inserted into the widget tree.
+  /// Initializes the provider, determines mesocycle state, and sets up the data fetch future.
   @override
   void initState() {
     super.initState();
     _userProvider = Provider.of<UserProvider>(context, listen: false);
+
     DateTime? startDate = _userProvider.mesocycleStartDate;
     DateTime? endDate = _userProvider.mesocycleEndDate;
 
     if (startDate != null) {
       DateTime today = DateUtils.dateOnly(DateTime.now());
+
+      // Check if the mesocycle starts today or in the future.
       if (DateUtils.dateOnly(startDate) == today) {
         isMesocycleStartToday = true;
       } else if (startDate.isAfter(today)) {
@@ -45,21 +65,30 @@ class _TrainingState extends State<Training> {
       }
     }
 
-    if (endDate != null &&
-        endDate.isBefore(DateUtils.dateOnly(DateTime.now()))) {
+    // Update lastDate if mesocycle endDate is in the past.
+    if (endDate != null && endDate.isBefore(DateUtils.dateOnly(DateTime.now()))) {
       lastDate = endDate;
     }
 
+    // Fetch data during init
     _fetchDataFuture = _fetchData(context);
   }
 
+  /// Asynchronously fetches activity data and resting heart rate from the Impact service.
+  /// 
+  /// Returns a map containing:
+  /// - 'activities': A map of DateTime to list of activities.
+  /// - 'restHR': A double representing resting heart rate.
   Future<Map<String, dynamic>> _fetchData(BuildContext context) async {
     try {
-      // Simulate network calls
+      // Simulate network latency (e.g., API call delay)
       await Future.delayed(const Duration(seconds: 2));
 
-      // Fetch activities and restHR based on userProvider data
-      DateTime start = _userProvider.mesocycleStartDate ?? DateUtils.dateOnly(DateTime.now().subtract(const Duration(days: 30)));
+      // Define the start date for the query
+      DateTime start = _userProvider.mesocycleStartDate ??
+          DateUtils.dateOnly(DateTime.now().subtract(const Duration(days: 30)));
+
+      // Fetch activity and heart rate data
       final Map<DateTime, List<Activity>> activities = await impact.getActivitiesFromDateRange(
         start,
         lastDate,
@@ -75,11 +104,14 @@ class _TrainingState extends State<Training> {
     }
   }
 
-  _toHelpPage(BuildContext context) {
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (context) => const Help()));
+  /// Navigates to the Help page.
+  void _toHelpPage(BuildContext context) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (context) => const Help()));
   }
 
+  /// Builds the main UI of the Training page.
+  /// Displays a loading indicator, error message, or appropriate content
+  /// depending on the FutureBuilder state and mesocycle status.
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -92,6 +124,7 @@ class _TrainingState extends State<Training> {
         backgroundColor: Theme.of(context).primaryColor,
         foregroundColor: Theme.of(context).secondaryHeaderColor,
         actions: [
+          // Help icon that navigates to Help page
           Padding(
             padding: const EdgeInsets.only(right: 5),
             child: IconButton(
@@ -103,10 +136,13 @@ class _TrainingState extends State<Training> {
           ),
         ],
       ),
+
+      // Body of the page managed by a FutureBuilder to handle asynchronous loading of training data
       body: FutureBuilder<Map<String, dynamic>>(
         future: _fetchDataFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
+            // While loading, show a spinner
             return Center(
               child: CircularProgressIndicator(
                 strokeWidth: 5,
@@ -114,10 +150,13 @@ class _TrainingState extends State<Training> {
               ),
             );
           } else if (snapshot.hasError) {
+            // On error, show message
             return Center(child: Text('Error: ${snapshot.error}'));
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            // No data to show
             return const Center(child: Text('No data available'));
           } else {
+            // Show appropriate UI depending on mesocycle state
             if (isMesocycleStartToday) {
               return _buildMesocycleStartTodayUI(snapshot.data!['restHR']);
             } else if (isMesocycleStartFuture) {
@@ -128,10 +167,16 @@ class _TrainingState extends State<Training> {
           }
         },
       ),
-      drawer: NavDrawer(),
+
+      // Navigation drawer on the left
+      drawer: const NavDrawer(),
     );
   }
 
+  /// Builds the UI displayed when the mesocycle starts today.
+  /// It encourages the user to simulate their first training session
+  /// by creating an `Algorithm` instance (based on user parameters and resting HR),
+  /// and provides a button to navigate to the simulation page.
   Widget _buildMesocycleStartTodayUI(double restHR) {
     Algorithm algorithm = Algorithm(
       gender: _userProvider.gender ?? 'male',
@@ -184,6 +229,8 @@ class _TrainingState extends State<Training> {
     );
   }
 
+  /// Builds the UI shown when the mesocycle start date is in the future.
+  /// It simply informs the user of the upcoming start date.
   Widget _buildMesocycleStartFutureUI() {
     DateTime startDate = _userProvider.mesocycleStartDate!;
     String startDateString =
@@ -192,7 +239,7 @@ class _TrainingState extends State<Training> {
     return SafeArea(
       child: Center(
         child: Padding(
-          padding: EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
           child: Text(
             'Your training mesocycle will start on $startDateString',
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
@@ -203,11 +250,18 @@ class _TrainingState extends State<Training> {
     );
   }
 
+  /// Builds the UI for displaying the training load overview of the current mesocycle.
+  /// It processes user and activity data to compute training scores (TRIMP, ACL, CTL, TSB)
+  /// using the `Algorithm` class, and visualizes them using various widgets.
+  /// A button allows the user to simulate a future training session unless the mesocycle has ended.
   Widget _buildTrainingLoadUI(Map<String, dynamic> data) {
     Map<DateTime, List<Activity>> activities = data['activities'];
     double restHR = data['restHR'];
 
-    int dfms = ((lastDate.difference(_userProvider.mesocycleStartDate!).inHours)/24).round()+1;
+    // Calculate how many days have passed since the mesocycle started
+    int dfms = ((lastDate.difference(_userProvider.mesocycleStartDate!).inHours) / 24).round() + 1;
+
+    // Create algorithm instance with current user and session data
     Algorithm algorithm = Algorithm(
       gender: _userProvider.gender ?? 'male',
       age: _userProvider.age ?? 0,
@@ -215,9 +269,12 @@ class _TrainingState extends State<Training> {
       mesoLen: _userProvider.mesocycleLength ?? 42,
       daysFromMesoStart: dfms,
     );
+
+    // Compute mesocycle scores for all days up to lastDate
     Map<DateTime, Map<String, double>> mesocycleScores =
         algorithm.computeScoresOfMesocycle(lastDate, activities);
 
+    // Provide scores for the current (last) training day
     ScoreProvider scoreProvider = ScoreProvider(
       day: lastDate,
       scoresOfDay: mesocycleScores[lastDate]!,
@@ -229,36 +286,39 @@ class _TrainingState extends State<Training> {
           create: (context) => scoreProvider,
           builder: (context, child) => Column(
             children: [
+              // Displays the full mesocycle plot
               PlotContainer(
                 scores: mesocycleScores,
                 scoreProvider: scoreProvider,
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
+
+              // Displays the scores of the selected training day
               Consumer<ScoreProvider>(
                 builder: (context, provider, child) {
                   return Column(
                     children: [
                       Text(
                         'Training scores of ${provider.day.day.toString().padLeft(2, '0')}/${provider.day.month.toString().padLeft(2, '0')}',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 20,
                         ),
                       ),
-                      SizedBox(height: 5),
+                      const SizedBox(height: 5),
                       TRIMPDisplay(
-                        index: (provider.scoresOfDay['TRIMP']!),
+                        index: provider.scoresOfDay['TRIMP']!,
                       ),
                       Text(
-                        'Acute Training Load: ${(provider.scoresOfDay['ACL']!).toStringAsFixed(2)}',
-                        style: TextStyle(
+                        'Acute Training Load: ${provider.scoresOfDay['ACL']!.toStringAsFixed(2)}',
+                        style: const TextStyle(
                           color: Colors.red,
                           fontSize: 18,
                         ),
                       ),
                       Text(
-                        'Chronic Training Load: ${(provider.scoresOfDay['CTL']!).toStringAsFixed(2)}',
-                        style: TextStyle(
+                        'Chronic Training Load: ${provider.scoresOfDay['CTL']!.toStringAsFixed(2)}',
+                        style: const TextStyle(
                           color: Colors.blue,
                           fontSize: 18,
                         ),
@@ -267,13 +327,13 @@ class _TrainingState extends State<Training> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            'Training Stress Balance: ${(provider.scoresOfDay['TSB']!).toStringAsFixed(2)}',
-                            style: TextStyle(
+                            'Training Stress Balance: ${provider.scoresOfDay['TSB']!.toStringAsFixed(2)}',
+                            style: const TextStyle(
                               color: Colors.deepPurple,
                               fontSize: 18,
                             ),
                           ),
-                          SizedBox(width: 5),
+                          const SizedBox(width: 5),
                           PerformanceEmoji(tsb: provider.scoresOfDay['TSB']!),
                         ],
                       ),
@@ -282,24 +342,28 @@ class _TrainingState extends State<Training> {
                 },
               ),
               const SizedBox(height: 20),
+
+              // Button to simulate a training session or show a warning if the mesocycle has ended
               ElevatedButton(
                 onPressed: () {
                   if (lastDate.isBefore(DateUtils.dateOnly(
-                      DateTime.now().subtract(Duration(days: 1))))) {
+                      DateTime.now().subtract(const Duration(days: 1))))) {
+                    // Show warning if the mesocycle is over
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
                         content: Center(
                           child: Text(
                             'Your mesocycle ended on ${lastDate.day.toString().padLeft(2, '0')}/${lastDate.month.toString().padLeft(2, '0')}!',
-                            style: TextStyle(
+                            style: const TextStyle(
                                 fontSize: 18, fontWeight: FontWeight.bold),
                           ),
                         ),
                         backgroundColor: Colors.red,
-                        duration: Duration(seconds: 3),
+                        duration: const Duration(seconds: 3),
                       ),
                     );
                   } else {
+                    // Navigate to simulation page
                     _toSimulationPage(
                       context,
                       mesocycleScores,
@@ -330,6 +394,8 @@ class _TrainingState extends State<Training> {
     );
   }
 
+  /// Navigates to the training session simulation page,
+  /// passing along the current algorithm and computed scores.
   void _toSimulationPage(
     BuildContext context,
     Map<DateTime, Map<String, double>> mesocycleScores,
@@ -346,102 +412,129 @@ class _TrainingState extends State<Training> {
   }
 }
 
+/// A container widget that displays a plot of training load and performance scores.
+/// Shows a title, a legend for the score types (ACL, CTL, TSB),
+/// and renders a custom plot if there is enough data.
 class PlotContainer extends StatelessWidget {
+  /// Map containing scores indexed by date.
   final Map<DateTime, Map<String, double>> scores;
+
+  /// Provider managing selected score state or interaction.
   final ScoreProvider scoreProvider;
 
-  PlotContainer({Key? key, required this.scores, required this.scoreProvider})
-      : super(key: key);
+  /// Creates a PlotContainer with given scores and score provider.
+  const PlotContainer({
+    super.key,
+    required this.scores,
+    required this.scoreProvider,
+  });
 
   @override
   Widget build(BuildContext context) {
-    double screenWidth = MediaQuery.of(context).size.width;
-    double screenHeight = MediaQuery.of(context).size.height;
+    // Get screen dimensions for responsive sizing.
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
 
+    // If there's only one score, return an empty placeholder of 25% screen height
     if (scores.length == 1) {
-      return Container(
-        height: screenHeight*0.25,
-      );
-    } else {
-      return Container(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Padding(
-              padding:
-                  EdgeInsets.only(top: 20, bottom: 14, left: 20, right: 20),
-              child: Center(
-                child: Text(
-                  'Plot of the training load and performance',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
-              ),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 12,
-                  height: 12,
-                  color: Colors.red,
-                  margin: EdgeInsets.only(right: 4),
-                ),
-                Text(
-                  'ACL',
-                  style: TextStyle(fontSize: 14),
-                ),
-                SizedBox(width: 10),
-                Container(
-                  width: 12,
-                  height: 12,
-                  color: Colors.blue,
-                  margin: EdgeInsets.only(right: 4),
-                ),
-                Text(
-                  'CTL',
-                  style: TextStyle(fontSize: 14),
-                ),
-                SizedBox(width: 10),
-                Container(
-                  width: 12,
-                  height: 12,
-                  color: Colors.deepPurple,
-                  margin: EdgeInsets.only(right: 4),
-                ),
-                Text(
-                  'TSB',
-                  style: TextStyle(fontSize: 14),
-                ),
-              ],
-            ),
-            Container(
-              width: 0.9 * screenWidth,
-              height: 0.4 * screenHeight,
-              decoration: const BoxDecoration(
-                color: Colors.transparent,
-              ),
-              child: Padding(
-                padding:
-                    EdgeInsets.only(top: 10, bottom: 10, right: 10, left: 0),
-                child: CustomPlot(
-                  scores: scores,
-                  scoreProvider: scoreProvider,
-                ),
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(vertical: 0, horizontal: 20),
-              child: Text(
-                'Click on data points in the chart to display their values below.',
-                style: TextStyle(fontSize: 12),
-              ),
-            ),
-          ],
-        ),
-      );
+      return SizedBox(height: screenHeight * 0.25);
     }
+
+    // Otherwise, return the full plot layout
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Title text for the plot section
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 20, horizontal: 20),
+          child: Text(
+            'Plot of the training load and performance',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+            ),
+          ),
+        ),
+
+        // Legend showing the meaning of each colored line (ACL, CTL, TSB)
+        _buildLegend(),
+
+        // Main plot container showing the CustomPlot
+        Padding(
+          padding: const EdgeInsets.only(top: 10, bottom: 10, right: 10),
+          child: SizedBox(
+            width: screenWidth * 0.9,
+            height: screenHeight * 0.4,
+            child: CustomPlot(
+              scores: scores,
+              scoreProvider: scoreProvider,
+            ),
+          ),
+        ),
+
+        // Instructional text for interacting with the plot
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            'Click on data points in the chart to display their values below.',
+            style: TextStyle(fontSize: 12),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Builds the legend row displaying color codes for ACL, CTL, and TSB.
+  Widget _buildLegend() {
+    return const Padding(
+      padding: EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _LegendItem(color: Colors.red, label: 'ACL'),
+          SizedBox(width: 10),
+          _LegendItem(color: Colors.blue, label: 'CTL'),
+          SizedBox(width: 10),
+          _LegendItem(color: Colors.deepPurple, label: 'TSB'),
+        ],
+      ),
+    );
+  }
+}
+
+/// A reusable widget to display a legend item with a colored square and a label.
+class _LegendItem extends StatelessWidget {
+  /// Color of the legend square.
+  final Color color;
+
+  /// Text label next to the square.
+  final String label;
+
+  /// Constructs a legend item with specified color and label.
+  const _LegendItem({
+    required this.color,
+    required this.label,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        // Colored square
+        Container(
+          width: 12,
+          height: 12,
+          color: color,
+          margin: const EdgeInsets.only(right: 4),
+        ),
+
+        // Label next to the square
+        Text(
+          label,
+          style: const TextStyle(fontSize: 14),
+        ),
+      ],
+    );
   }
 }

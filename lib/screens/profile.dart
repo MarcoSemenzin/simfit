@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -7,6 +6,11 @@ import 'package:simfit/navigation/navtools.dart';
 import 'package:simfit/providers/user_provider.dart';
 import 'package:simfit/screens/home.dart';
 
+/// A user profile page that allows editing and saving of personal data,
+/// including name, gender, birth date, and mesocycle information.
+///
+/// This widget loads existing data from [UserProvider] and updates it upon save.
+/// If the user is logging in for the first time, they are redirected to the home page after saving.
 class Profile extends StatefulWidget {
   const Profile({super.key});
 
@@ -15,14 +19,28 @@ class Profile extends StatefulWidget {
 }
 
 class _ProfileState extends State<Profile> {
+  /// Key used to validate the profile form.
   final _formKey = GlobalKey<FormState>();
+
+  /// Controller for the user's name input.
   final TextEditingController nameController = TextEditingController();
+
+  /// Controller for the user's date of birth input.
   final TextEditingController dateBirthController = TextEditingController();
+
+  /// Controller for the mesocycle start date input.
   final TextEditingController dateMesoController = TextEditingController();
+
+  /// Controller for the mesocycle duration input (in days).
   final TextEditingController durationMesoController = TextEditingController();
+
+  /// The user provider containing profile data.
   late UserProvider _userProvider;
 
+  /// The selected date used in date pickers.
   DateTime selectedDate = DateTime.now();
+
+  /// The selected gender (default is 'male').
   String _gender = 'male';
 
   @override
@@ -31,28 +49,31 @@ class _ProfileState extends State<Profile> {
     _loadUserInfo();
   }
 
+  /// Displays a date picker and sets the result into the given [controller].
   Future<void> _selectDate(
       BuildContext context, TextEditingController controller) async {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: selectedDate,
       firstDate: DateTime(1970, 1),
-      lastDate: DateTime(2024, 12),
+      lastDate: DateTime(2025, 12),
     );
     if (picked != null && picked != selectedDate) {
       controller.text = DateFormat('yyyy-MM-dd').format(picked);
     }
   }
 
+  /// Loads user data from the [UserProvider] and populates the form fields.
   void _loadUserInfo() {
-    _userProvider = Provider.of<UserProvider>(context, listen: false);;
+    _userProvider = Provider.of<UserProvider>(context, listen: false);
     setState(() {
       _gender = _userProvider.gender ?? 'male';
       dateBirthController.text = _userProvider.birthDate != null
           ? DateFormat('yyyy-MM-dd').format(_userProvider.birthDate!)
           : '';
       dateMesoController.text = _userProvider.mesocycleStartDate != null
-          ? DateFormat('yyyy-MM-dd').format(_userProvider.mesocycleStartDate!)
+          ? DateFormat('yyyy-MM-dd')
+              .format(_userProvider.mesocycleStartDate!)
           : '';
       nameController.text = _userProvider.name ?? '';
       durationMesoController.text =
@@ -60,6 +81,8 @@ class _ProfileState extends State<Profile> {
     });
   }
 
+  /// Validates and saves the form data into the [UserProvider].
+  /// If it is the first login, navigates to the home page after saving.
   void _saveUserInfo() {
     bool firstLogin = _userProvider.firstLogin;
     if (_formKey.currentState!.validate()) {
@@ -83,18 +106,24 @@ class _ProfileState extends State<Profile> {
         ),
       );
       if (firstLogin) {
-        Future.delayed(Duration(seconds: 3), () {
+        Future.delayed(const Duration(seconds: 3), () {
           _toHomePage(context);
         });
       }
     }
   }
 
+  /// Navigates to the home page, replacing the current route.
   void _toHomePage(BuildContext context) {
     Navigator.of(context)
-        .pushReplacement(MaterialPageRoute(builder: (context) => Home()));
+        .pushReplacement(MaterialPageRoute(builder: (context) => const Home()));
   }
 
+  /// Builds a styled [TextFormField] used in the profile form.
+  ///
+  /// [controller] is the field controller, [labelText] is the field label,
+  /// [icon] is the leading icon, [validator] validates the input,
+  /// and [onTap] can be used for custom tap behavior (e.g., date pickers).
   Widget _buildTextFormField({
     required TextEditingController controller,
     required String labelText,
@@ -132,12 +161,12 @@ class _ProfileState extends State<Profile> {
           prefixIcon:
               Icon(icon, color: Theme.of(context).primaryColor, size: 30),
           labelText: labelText,
-          labelStyle: TextStyle(fontSize: 20),
+          labelStyle: const TextStyle(fontSize: 20),
         ),
         validator: validator,
         onTap: onTap,
         keyboardType: keyboardType,
-        style: TextStyle(fontSize: 20),
+        style: const TextStyle(fontSize: 20),
       ),
     );
   }
@@ -163,7 +192,7 @@ class _ProfileState extends State<Profile> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  SizedBox(height: 20),
+                  const SizedBox(height: 20),
                   Text(
                     'About you',
                     style: TextStyle(
@@ -172,7 +201,9 @@ class _ProfileState extends State<Profile> {
                       color: Theme.of(context).primaryColor,
                     ),
                   ),
-                  SizedBox(height: 5),
+                  const SizedBox(height: 5),
+
+                  // Name input field with validation
                   _buildTextFormField(
                     controller: nameController,
                     labelText: 'Name',
@@ -187,6 +218,8 @@ class _ProfileState extends State<Profile> {
                       return null;
                     },
                   ),
+
+                  // Date of birth input field with date picker and validation
                   _buildTextFormField(
                     controller: dateBirthController,
                     labelText: 'Date of Birth',
@@ -204,12 +237,14 @@ class _ProfileState extends State<Profile> {
                     },
                     onTap: () => _selectDate(context, dateBirthController),
                   ),
+
+                  // Gender dropdown with custom icons and validation
                   Padding(
                     padding: const EdgeInsets.symmetric(
                       vertical: 10,
                       horizontal: 10,
                     ),
-                    child: Container(
+                    child: SizedBox(
                       height: 65,
                       child: DropdownButtonFormField(
                         isDense: false,
@@ -249,6 +284,7 @@ class _ProfileState extends State<Profile> {
                           ),
                         ),
                         items: [
+                          // Male option
                           DropdownMenuItem(
                             value: 'male',
                             child: Row(
@@ -269,6 +305,7 @@ class _ProfileState extends State<Profile> {
                               ],
                             ),
                           ),
+                          // Female option
                           DropdownMenuItem(
                             value: 'female',
                             child: Row(
@@ -298,7 +335,10 @@ class _ProfileState extends State<Profile> {
                       ),
                     ),
                   ),
+
                   const SizedBox(height: 20),
+
+                  // Section title: About the training
                   Text(
                     'About the training',
                     style: TextStyle(
@@ -307,7 +347,9 @@ class _ProfileState extends State<Profile> {
                       color: Theme.of(context).primaryColor,
                     ),
                   ),
-                  SizedBox(height: 5),
+                  const SizedBox(height: 5),
+
+                  // Mesocycle duration input with numeric validation
                   _buildTextFormField(
                     controller: durationMesoController,
                     labelText: 'Mesocycle duration (days)',
@@ -324,6 +366,8 @@ class _ProfileState extends State<Profile> {
                       return null;
                     },
                   ),
+
+                  // Mesocycle start date input with date picker
                   _buildTextFormField(
                     controller: dateMesoController,
                     labelText: 'Date of mesocycle start',
@@ -336,7 +380,10 @@ class _ProfileState extends State<Profile> {
                     },
                     onTap: () => _selectDate(context, dateMesoController),
                   ),
-                  SizedBox(height: 20),
+
+                  const SizedBox(height: 20),
+
+                  // Save button to submit the form
                   Center(
                     child: ElevatedButton(
                       onPressed: _saveUserInfo,
@@ -355,14 +402,17 @@ class _ProfileState extends State<Profile> {
                       ),
                     ),
                   ),
-                  SizedBox(height: 40),
+
+                  const SizedBox(height: 40),
                 ],
               ),
             ),
           ),
         ),
       ),
-      drawer: _userProvider.firstLogin ? null : NavDrawer(),
+
+      // Navigation drawer shown only if it's not the user's first login
+      drawer: _userProvider.firstLogin ? null : const NavDrawer(),
     );
   }
 }

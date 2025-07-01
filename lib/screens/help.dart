@@ -18,7 +18,7 @@ class Help extends StatelessWidget {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(24.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -32,23 +32,23 @@ class Help extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               buildSectionTitle(context, 'TRIMP (Training Impulse)'),
               buildParagraph(
                 'TRIMP is a measure of training load based on exercise duration and intensity. It is calculated as:'
               ),
               Math.tex(
                   r'TRIMP = \text{duration (minutes)} \times \%HRR \times \text{weighting factor}',
-                  textStyle: TextStyle(fontSize: 12),
+                  textStyle: const TextStyle(fontSize: 12),
                 ),
               
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
                Math.tex(
                   r'\%HRR = \frac{\text{avg HR during session} - \text{HR rest}}{\text{HR max} - \text{HR rest}}',
-                  textStyle: TextStyle(fontSize: 12),
+                  textStyle: const TextStyle(fontSize: 12),
                 ),
               
-              SizedBox(height: 10),
+              const SizedBox(height: 10),
               buildParagraph(
                 'The weighting factor is gender-specific: 1.67 for women and 1.92 for men. Higher TRIMP values indicate more intense training sessions.',
               ),
@@ -85,7 +85,7 @@ class Help extends StatelessWidget {
                 '- If ACL rises sharply while CTL remains stable, it indicates an increase in recent training load, which may lead to fatigue.\n'
                 '- TSB trending positive indicates good recovery and readiness to perform, while negative TSB indicates accumulating fatigue.',
               ),
-              SizedBox(height: 30),
+              const SizedBox(height: 30),
             ],
           ),
         ),
@@ -95,7 +95,7 @@ class Help extends StatelessWidget {
 
   Widget buildSectionTitle(BuildContext context, String title) {
     return Padding(
-      padding: EdgeInsets.only(top: 16.0, bottom: 8.0),
+      padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
       child: Text(
         title,
         style: TextStyle(
@@ -109,10 +109,10 @@ class Help extends StatelessWidget {
 
   Widget buildParagraph(String text) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 8.0),
+      padding: const EdgeInsets.only(bottom: 8.0),
       child: Text(
         text,
-        style: TextStyle(fontSize: 16),
+        style: const TextStyle(fontSize: 16),
       ),
     );
   }

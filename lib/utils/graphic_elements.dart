@@ -5,47 +5,64 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:simfit/models/activity.dart';
 import 'package:simfit/providers/score_provider.dart';
 
+/// A widget that renders a line chart of training performance scores over time.
+/// 
+/// The chart shows multiple performance metrics (like 'ACL', 'CTL', 'TSB') as lines,
+/// with x-axis representing days since the first date in the data,
+/// and y-axis representing the score values.
 class CustomPlot extends StatelessWidget {
+  /// Map of dates to a map of score types and their values for that date.
   final Map<DateTime, Map<String, double>> scores;
+
+  /// Provider to handle score state updates when user interacts with the chart.
   final ScoreProvider scoreProvider;
 
-  CustomPlot({required this.scores, required this.scoreProvider});
+  /// Creates a [CustomPlot] widget with the given [scores] and [scoreProvider].
+  const CustomPlot({
+    super.key, 
+    required this.scores, 
+    required this.scoreProvider,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Use the first date as the reference date
+    // Use the first date as the reference (day 0)
     final referenceDate = scores.keys.first;
 
+    // Convert all dates to days difference relative to referenceDate, then sort
     final xValues = scores.keys
         .map((date) => date.difference(referenceDate).inDays.toDouble())
         .toList()
       ..sort();
 
-    double minX = xValues.first;
-    double maxX = xValues.last;
+    final double minX = xValues.first;
+    final double maxX = xValues.last;
 
-    // Calculate interval for the x-axis
+    // Calculate interval for x-axis titles based on the number of scores
     double? intervalX;
     if (scores.length > 2 && scores.length < 10) {
-      intervalX = (maxX - minX) / (scores.length-1);
+      intervalX = (maxX - minX) / (scores.length - 1);
     } else if (scores.length >= 10) {
       intervalX = (maxX - minX) / 3;
     }
 
-
+    // Determine the min and max Y values, excluding the 'TRIMP' type
     double minY = double.infinity;
     double maxY = double.negativeInfinity;
-    scores.values.forEach((map) {
-      map.forEach((type, value) {
+    for (var dailyScores in scores.values) {
+      dailyScores.forEach((type, value) {
         if (type != 'TRIMP') {
           if (value < minY) minY = value;
           if (value > maxY) maxY = value;
         }
       });
-    });
+    }
+
+    // Round minY down and maxY up to nearest 10, adding padding of 20 units total
     minY = ((minY / 10).ceil() - 2) * 10.0;
     maxY = ((maxY / 10).floor() + 2) * 10.0;
 
+    // Calculate interval for y-axis labels
     double intervalY = ((maxY.abs() + minY.abs()) / 100).ceil() * 10.toDouble();
 
     return LineChart(
@@ -57,7 +74,8 @@ class CustomPlot extends StatelessWidget {
               reservedSize: 30,
               interval: intervalX,
               getTitlesWidget: (value, meta) {
-                DateTime date = referenceDate.add(Duration(days: value.toInt()));
+                final date = referenceDate.add(Duration(days: value.toInt()));
+                // If intervalX is null, only show labels for min and max x values
                 if (intervalX == null) {
                   if (value == minX || value == maxX) {
                     return SideTitleWidget(
@@ -65,20 +83,20 @@ class CustomPlot extends StatelessWidget {
                       angle: -pi / 5,
                       child: Text(
                         '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}',
-                        style: TextStyle(fontSize: 12),
+                        style: const TextStyle(fontSize: 12),
                         textAlign: TextAlign.center,
                       ),
                     );
-                  } else {
-                    return Container();
                   }
+                  return Container();
                 }
+                // Otherwise show label for every interval
                 return SideTitleWidget(
                   axisSide: meta.axisSide,
                   angle: -pi / 5,
                   child: Text(
                     '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}',
-                    style: TextStyle(fontSize: 12),
+                    style: const TextStyle(fontSize: 12),
                     textAlign: TextAlign.center,
                   ),
                 );
@@ -95,7 +113,7 @@ class CustomPlot extends StatelessWidget {
                   axisSide: meta.axisSide,
                   child: Text(
                     value.toInt().toString(),
-                    style: TextStyle(fontSize: 12),
+                    style: const TextStyle(fontSize: 12),
                     textAlign: TextAlign.center,
                   ),
                 );
@@ -115,8 +133,12 @@ class CustomPlot extends StatelessWidget {
           horizontalInterval: intervalY,
         ),
         borderData: FlBorderData(show: true),
-        clipData:
-            FlClipData(top: true, bottom: true, left: false, right: false),
+        clipData: const FlClipData(
+          top: true, 
+          bottom: true, 
+          left: false, 
+          right: false,
+        ),
         lineBarsData: [
           _buildLineChartBarData('ACL', Colors.red),
           _buildLineChartBarData('CTL', Colors.blue),
@@ -128,20 +150,19 @@ class CustomPlot extends StatelessWidget {
           enabled: true,
           handleBuiltInTouches: true,
           touchCallback: (FlTouchEvent event, LineTouchResponse? response) {
+            // On tap or long press end, update the provider with selected date's scores
             if (event is FlTapUpEvent || event is FlLongPressEnd) {
-              if (response != null && response.lineBarSpots != null) {
-                final spot = response.lineBarSpots!.first;
-                final DateTime date =
-                    referenceDate.add(Duration(days: spot.x.toInt()));
+              if (response?.lineBarSpots != null) {
+                final spot = response!.lineBarSpots!.first;
+                final date = referenceDate.add(Duration(days: spot.x.toInt()));
                 scoreProvider.setNewScoresOfDay(date, scores[date]!);
               }
             }
           },
           touchTooltipData: LineTouchTooltipData(
+            // Disabling tooltip content by returning null items
             getTooltipItems: (touchedSpots) {
-              return touchedSpots.map((touchedSpot) {
-                return null;
-              }).toList();
+              return touchedSpots.map((_) => null).toList();
             },
           ),
         ),
@@ -149,6 +170,7 @@ class CustomPlot extends StatelessWidget {
     );
   }
 
+  /// Helper method to build [LineChartBarData] for a given score key and color.
   LineChartBarData _buildLineChartBarData(String key, Color color) {
     return LineChartBarData(
       spots: _getSpots(key),
@@ -159,23 +181,31 @@ class CustomPlot extends StatelessWidget {
     );
   }
 
+  /// Converts scores of a specific key into sorted [FlSpot] objects for the chart.
   List<FlSpot> _getSpots(String key) {
     final referenceDate = scores.keys.first;
     return scores.entries
         .where((entry) => entry.value.containsKey(key))
         .map((entry) => FlSpot(
-            entry.key.difference(referenceDate).inDays.toDouble(), entry.value[key]!))
+            entry.key.difference(referenceDate).inDays.toDouble(), 
+            entry.value[key]!
+          ))
         .toList()
-      ..sort(
-          (a, b) => a.x.compareTo(b.x)); // Ensure the spots are sorted by date
+      ..sort((a, b) => a.x.compareTo(b.x)); // Sort spots by x (date)
   }
 }
 
 
+/// A widget that displays the TRIMP (Training Impulse) value
+/// along with a badge indicating the effort level category.
 class TRIMPDisplay extends StatelessWidget {
+  /// The TRIMP index value to display.
   final double index;
 
-  TRIMPDisplay({Key? key, required this.index}) : super(key: key);
+  /// Creates a TRIMPDisplay widget.
+  /// 
+  /// The [index] parameter must not be null.
+  const TRIMPDisplay({super.key, required this.index});
 
   @override
   Widget build(BuildContext context) {
@@ -198,15 +228,18 @@ class TRIMPDisplay extends StatelessWidget {
     }
 
     return Container(
-      padding: EdgeInsets.all(5.0),
+      padding: const EdgeInsets.all(5.0),
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            /// Displays the TRIMP index value formatted to 2 decimal places.
             Text(
               'TRIMP: ${double.parse((index).toStringAsFixed(2))}',
-              style: TextStyle(fontSize: 18),
+              style: const TextStyle(fontSize: 18),
             ),
+
+            /// Badge showing the effort level category with corresponding color.
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
@@ -229,22 +262,37 @@ class TRIMPDisplay extends StatelessWidget {
   }
 }
 
+/// A bar chart widget to display heart rate (HR) zones and
+/// the corresponding minutes spent in each zone.
 class HRZoneBarChart extends StatelessWidget {
+  /// List of heart rate zones with their respective minutes.
   final List<HRZone> zonesHR;
 
-  HRZoneBarChart({required this.zonesHR});
+  /// Creates an HRZoneBarChart widget.
+  /// 
+  /// The [zonesHR] parameter must not be null.
+  const HRZoneBarChart({super.key, required this.zonesHR});
 
   @override
   Widget build(BuildContext context) {
+    // Find the maximum minutes spent among all HR zones to
+    // determine the scale of the vertical axis.
     int maxMinutes = zonesHR
         .map((zone) => zone.minutes)
         .reduce((max, minutes) => max > minutes ? max : minutes);
+
+    // Calculate the vertical interval for y-axis titles:
+    // If maxMinutes < 50, use interval of 5,
+    // otherwise, calculate a rounded interval based on maxMinutes.
     double intervalY =
         (maxMinutes < 50) ? 5 : (maxMinutes.abs() / 100).ceil() * 10.toDouble();
 
     return BarChart(
       BarChartData(
         alignment: BarChartAlignment.spaceAround,
+
+        // Create a group of bars for each HR zone,
+        // using the index as the x-coordinate.
         barGroups: zonesHR.map((zone) {
           int index = zonesHR.indexOf(zone);
           return BarChartGroupData(
@@ -259,22 +307,29 @@ class HRZoneBarChart extends StatelessWidget {
             ],
           );
         }).toList(),
+
+        // Configure titles on all sides
         titlesData: FlTitlesData(
           show: true,
+
+          // Bottom axis titles: zone names, split into multiple lines on spaces.
           bottomTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
               reservedSize: 50,
               getTitlesWidget: (value, meta) {
                 return SideTitleWidget(
-                    axisSide: meta.axisSide,
-                    child: Text(
-                      zonesHR[value.toInt()].name.replaceAll(' ', '\n'),
-                      softWrap: true,
-                    ));
+                  axisSide: meta.axisSide,
+                  child: Text(
+                    zonesHR[value.toInt()].name.replaceAll(' ', '\n'),
+                    softWrap: true,
+                  ),
+                );
               },
             ),
           ),
+
+          // Left axis titles: numeric minutes labels spaced by intervalY.
           leftTitles: AxisTitles(
             sideTitles: SideTitles(
               showTitles: true,
@@ -283,11 +338,13 @@ class HRZoneBarChart extends StatelessWidget {
               getTitlesWidget: (value, meta) {
                 return SideTitleWidget(
                   axisSide: meta.axisSide,
-                  child: (Text(value.toInt().toString())),
+                  child: Text(value.toInt().toString()),
                 );
               },
             ),
           ),
+
+          // Hide top and right axis titles.
           topTitles: const AxisTitles(
             sideTitles: SideTitles(showTitles: false),
           ),
@@ -295,17 +352,35 @@ class HRZoneBarChart extends StatelessWidget {
             sideTitles: SideTitles(showTitles: false),
           ),
         ),
+
+        // No borders or grid lines for a cleaner look.
         borderData: FlBorderData(show: false),
-        gridData: FlGridData(show: false),
+        gridData: const FlGridData(show: false),
       ),
     );
   }
 }
 
-class PerformanceEmoji extends StatelessWidget {
-  final double tsb;
-  String emoji = '';
 
+/// A widget that displays an emoji representing performance status
+/// based on the TSB (Training Stress Balance) value.
+///
+/// The emoji reflects the user's recovery and training load:
+/// - 🥵 : Very negative TSB (overtrained or fatigued)
+/// - 😟 : Moderately negative TSB (fatigued)
+/// - 😐 : Neutral TSB (balanced)
+/// - 😊 : Positive TSB (well recovered)
+/// - 🤩 : Very positive TSB (fresh and ready)
+class PerformanceEmoji extends StatelessWidget {
+  /// The training stress balance value used to determine the emoji.
+  final double tsb;
+
+  /// Emoji string determined from [tsb].
+  late final String emoji;
+
+  /// Creates a PerformanceEmoji widget.
+  ///
+  /// The [tsb] value is required and used to select the emoji.
   PerformanceEmoji({super.key, required this.tsb}) {
     if (tsb < -25.0) {
       emoji = '🥵';
@@ -324,7 +399,7 @@ class PerformanceEmoji extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       emoji,
-      style: TextStyle(
+      style: const TextStyle(
         fontSize: 24,
         color: Colors.deepPurple,
         fontWeight: FontWeight.bold,
